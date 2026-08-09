@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { COLOR_PALETTE, getColorDot } from '@/lib/color-utils'
+import { useAdminAuth } from '@/hooks/use-admin-auth'
 
 const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '2XL']
 const LINGERIE_SIZES = ['75', '80', '85', '90', '95', '100']
@@ -55,6 +56,9 @@ function fileToCompressedBase64(file: File, maxWidth = 1600, quality = 0.82): Pr
 
 export default function AddProductPage() {
   const router = useRouter()
+  const { isAuth, password, checking, login } = useAdminAuth()
+  const [pwInput, setPwInput] = useState('')
+  const [pwError, setPwError] = useState('')
 
   const [collections, setCollections] = useState<string[]>([])
   const [isNewCol, setIsNewCol]        = useState(false)
@@ -102,7 +106,7 @@ export default function AddProductPage() {
     setError('')
     try {
       const { base64, mimeType } = await fileToCompressedBase64(file)
-      const pw = localStorage.getItem('admin_pw') || ''
+      const pw = password
       const res = await fetch('/api/upload-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-token': pw },
@@ -152,7 +156,7 @@ export default function AddProductPage() {
       }
     }
 
-    const pw = localStorage.getItem('admin_pw') || ''
+    const pw = password
     setIsSubmitting(true)
 
     try {
@@ -188,6 +192,34 @@ export default function AddProductPage() {
       setIsSubmitting(false)
     }
   }
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const ok = await login(pwInput)
+    if (!ok) setPwError('Mot de passe incorrect')
+  }
+
+  if (checking) return null
+  if (!isAuth) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb' }}>
+      <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '40px', width: '360px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+        <h1 style={{ margin: '0 0 24px', fontSize: '20px', fontWeight: '700', textAlign: 'center' }}>🔒 Admin Produits</h1>
+        <form onSubmit={handleLogin}>
+          <input
+            type="password"
+            placeholder="Mot de passe admin"
+            value={pwInput}
+            onChange={e => { setPwInput(e.target.value); setPwError('') }}
+            style={{ width: '100%', padding: '12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+          />
+          {pwError && <p style={{ color: '#ef4444', fontSize: '13px', margin: '8px 0 0' }}>{pwError}</p>}
+          <button type="submit" style={{ marginTop: '16px', width: '100%', padding: '12px', backgroundColor: '#1a1a1a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+            Connexion
+          </button>
+        </form>
+      </div>
+    </div>
+  )
 
   // ── Styles partagés ───────────────────────────────────────────
   const inputStyle: React.CSSProperties = {

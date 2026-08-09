@@ -54,6 +54,7 @@ function OrderModal({
   onClose: () => void
 }) {
   const [selectedColor, setSelectedColor] = useState(product.colors[0])
+  const [clientRequestId] = useState(() => crypto.randomUUID())
 
   // Compute sizeStocks for the currently selected color
   const sizeStocks: SizeStocks | null = colorStocks
@@ -113,6 +114,7 @@ function OrderModal({
         sousTotal: subtotal, livraison: deliveryFee, prix: total,
         paiement: 'Paiement à la livraison',
         produits: [{ modele: product.name, taille: selectedSize, couleur: selectedColor, quantite: quantity, prixUnitaire: unitPrice, prixTotal: subtotal }],
+        clientRequestId,
       }
       const response = await fetch('/api/orders', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),

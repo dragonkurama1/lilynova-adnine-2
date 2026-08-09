@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { getBestSellers, type Product } from '@/lib/products'
+import { type Product } from '@/lib/products'
 import { getLiveProducts } from '@/lib/get-live-products'
 import { Star, ShoppingBag } from 'lucide-react'
 
@@ -13,7 +13,7 @@ function resolveImage(product: Product): string {
 }
 
 export function FeaturedCollectionsSection() {
-  const [bestSellers, setBestSellers] = useState<Product[]>(getBestSellers())
+  const [bestSellers, setBestSellers] = useState<Product[]>([])
 
   useEffect(() => {
     getLiveProducts().then(liveProducts => {

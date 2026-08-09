@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase/server'
 
-const APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL!
-const ADMIN_PASSWORD  = process.env.ADMIN_PASSWORD || 'admin2024'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin2024'
 
 function checkAuth(request: NextRequest): boolean {
   const token = request.headers.get('x-admin-token')
@@ -26,31 +26,28 @@ export async function PUT(
       return NextResponse.json({ error: 'ID catalogue manquant dans l\'URL.' }, { status: 400 })
     }
 
+    let sortOrder: number | null = null
     if (body.Ordre !== '' && body.Ordre != null) {
       const num = Number(body.Ordre)
       if (isNaN(num) || num < 0) {
         return NextResponse.json({ error: 'Le champ "Ordre" doit être un nombre positif.' }, { status: 400 })
       }
-      body.Ordre = num
+      sortOrder = num
     }
 
-    const payload = { action: 'updateCatalogue', ID: id, ...body }
-
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      redirect: 'follow',
-      body: JSON.stringify(payload),
-    })
-
-    const text = await res.text()
-    if (!text.trim().startsWith('{')) {
-      throw new Error(`Apps Script non-JSON: ${text.slice(0, 200)}`)
-    }
-
-    const data = JSON.parse(text)
-    if (data.error) throw new Error(data.error)
-    if (!data.success) throw new Error('Apps Script a répondu sans success=true')
+    const { error } = await supabaseAdmin
+      .from('collections')
+      .update({
+        name: String(body.Nom || '').trim(),
+        description: String(body.Description || '').trim(),
+        image: String(body.Image || '').trim(),
+        accent_color: String(body.Couleur || '#1A1A1A').trim(),
+        border_style: String(body.Bordure || 'arrondie').trim(),
+        sort_order: sortOrder,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('slug', id)
+    if (error) throw new Error(error.message)
 
     return NextResponse.json({ success: true, updated: true })
   } catch (err) {
@@ -75,23 +72,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'ID catalogue manquant dans l\'URL.' }, { status: 400 })
     }
 
-    const payload = { action: 'deleteCatalogue', ID: id }
-
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      redirect: 'follow',
-      body: JSON.stringify(payload),
-    })
-
-    const text = await res.text()
-    if (!text.trim().startsWith('{')) {
-      throw new Error(`Apps Script non-JSON: ${text.slice(0, 200)}`)
-    }
-
-    const data = JSON.parse(text)
-    if (data.error) throw new Error(data.error)
-    if (!data.success) throw new Error('Apps Script a répondu sans success=true')
+    const { error } = await supabaseAdmin.from('collections').delete().eq('slug', id)
+    if (error) throw new Error(error.message)
 
     return NextResponse.json({ success: true, deleted: true })
   } catch (err) {

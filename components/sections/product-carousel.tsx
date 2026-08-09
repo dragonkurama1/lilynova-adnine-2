@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { products, type Product } from '@/lib/products'
+import { type Product } from '@/lib/products'
 import { getLiveProducts } from '@/lib/get-live-products'
 
 function resolveImage(product: Product): string {
@@ -50,7 +50,7 @@ function ProductCard({ product }: { product: Product }) {
 export function ProductCarouselSection() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const [allProducts, setAllProducts] = useState<Product[]>(products)
+  const [allProducts, setAllProducts] = useState<Product[]>([])
 
   useEffect(() => {
     getLiveProducts().then(setAllProducts)
@@ -58,6 +58,8 @@ export function ProductCarouselSection() {
 
   const currentProduct = allProducts[currentIndex]
   const totalProducts = allProducts.length
+
+  if (!currentProduct) return null
 
   const handleNext = () => {
     if (currentIndex < totalProducts - 1) {

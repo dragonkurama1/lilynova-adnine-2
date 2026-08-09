@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useAdminAuth } from '@/hooks/use-admin-auth'
 
 const ALL_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '2XL', '75', '80', '85', '90', '95', '100']
-const LS_KEY = 'admin_pw'
 
 type ProductRow = {
   ID: string
@@ -15,7 +15,7 @@ type ProductRow = {
 } & Record<string, string | number>
 
 export default function AdminProductsPage() {
-  const [isAuth, setIsAuth]     = useState(false)
+  const { isAuth, password, checking, login } = useAdminAuth()
   const [pwInput, setPwInput]   = useState('')
   const [pwError, setPwError]   = useState('')
 
@@ -31,11 +31,6 @@ export default function AdminProductsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deletingAllId, setDeletingAllId] = useState<string | null>(null)
   const [toast, setToast]           = useState({ msg: '', type: '' })
-
-  useEffect(() => {
-    const saved = localStorage.getItem(LS_KEY)
-    if (saved) setIsAuth(true)
-  }, [])
 
   const showToast = (msg: string, type = 'success') => {
     setToast({ msg, type })
@@ -64,25 +59,19 @@ export default function AdminProductsPage() {
 
   useEffect(() => { if (isAuth) loadData() }, [isAuth, loadData])
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const saved = localStorage.getItem(LS_KEY)
-    if (pwInput === saved || pwInput === 'admin2024') {
-      localStorage.setItem(LS_KEY, pwInput)
-      setIsAuth(true)
-    } else {
-      setPwError('Mot de passe incorrect')
-    }
+    const ok = await login(pwInput)
+    if (!ok) setPwError('Mot de passe incorrect')
   }
 
   const handleDelete = async (id: string, couleur: string) => {
     if (!confirm(`Supprimer la variante "${id}" — ${couleur} ?`)) return
     setDeletingId(`${id}||${couleur}`)
     try {
-      const pw = localStorage.getItem(LS_KEY) || ''
       const res = await fetch(`/api/products/${id}?color=${encodeURIComponent(couleur)}`, {
         method: 'DELETE',
-        headers: { 'x-admin-token': pw },
+        headers: { 'x-admin-token': password },
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -96,15 +85,14 @@ export default function AdminProductsPage() {
   }
 
   // Supprime TOUTES les couleurs/variantes d'un produit (pas de paramètre
-  // "color" envoyé → l'Apps Script supprime toutes les lignes de cet ID).
+  // "color" envoyé → le serveur supprime toutes les variantes de cet ID).
   const handleDeleteAll = async (id: string, variantCount: number) => {
     if (!confirm(`Supprimer le produit "${id}" et ${variantCount > 1 ? `ses ${variantCount} variantes de couleur` : 'sa variante'} ? Cette action est irréversible.`)) return
     setDeletingAllId(id)
     try {
-      const pw = localStorage.getItem(LS_KEY) || ''
       const res = await fetch(`/api/products/${id}`, {
         method: 'DELETE',
-        headers: { 'x-admin-token': pw },
+        headers: { 'x-admin-token': password },
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -137,6 +125,7 @@ export default function AdminProductsPage() {
   }, {})
 
   // ── Auth screen ───────────────────────────────────────────────
+  if (checking) return null
   if (!isAuth) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb' }}>
       <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '40px', width: '360px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
@@ -180,11 +169,17 @@ export default function AdminProductsPage() {
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <Link href="/admin" style={{ padding: '8px 14px', backgroundColor: '#fff', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', color: '#374151', textDecoration: 'none', fontWeight: '500' }}>
-              ← Stock
+              ← Tableau de bord
             </Link>
             <button onClick={() => loadData()} style={{ padding: '8px 14px', backgroundColor: '#fff', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', color: '#374151', cursor: 'pointer', fontWeight: '500' }}>
               🔄 Actualiser
             </button>
+            <Link href="/admin/stock" style={{ padding: '8px 18px', backgroundColor: '#fff', border: '1.5px solid #1a1a1a', color: '#1a1a1a', borderRadius: '8px', fontSize: '13px', fontWeight: '600', textDecoration: 'none' }}>
+              📊 Stock
+            </Link>
+            <Link href="/admin/orders" style={{ padding: '8px 18px', backgroundColor: '#fff', border: '1.5px solid #1a1a1a', color: '#1a1a1a', borderRadius: '8px', fontSize: '13px', fontWeight: '600', textDecoration: 'none' }}>
+              🧾 Commandes
+            </Link>
             <Link href="/admin/products/import" style={{ padding: '8px 18px', backgroundColor: '#fff', border: '1.5px solid #1a1a1a', color: '#1a1a1a', borderRadius: '8px', fontSize: '13px', fontWeight: '600', textDecoration: 'none' }}>
               📥 Importer un catalogue
             </Link>
@@ -245,7 +240,7 @@ export default function AdminProductsPage() {
           <div style={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'auto' }}>
             {filtered.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px', color: '#6b7280' }}>
-                {products.length === 0 ? 'Aucun produit dans Google Sheets.' : 'Aucun résultat pour cette recherche.'}
+                {products.length === 0 ? 'Aucun produit dans le catalogue.' : 'Aucun résultat pour cette recherche.'}
               </div>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>

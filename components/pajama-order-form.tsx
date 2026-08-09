@@ -24,6 +24,10 @@ interface PajamaOrderFormProps {
 
 export function PajamaOrderForm({ items, total }: PajamaOrderFormProps) {
   const { clearCart } = useCart()
+  // Identifiant unique généré une fois par tentative de commande — envoyé au
+  // serveur pour rendre la soumission idempotente (un double-clic ou un
+  // retry réseau ne crée jamais deux commandes).
+  const [clientRequestId] = useState(() => crypto.randomUUID())
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [city, setCity] = useState('')
@@ -74,6 +78,7 @@ export function PajamaOrderForm({ items, total }: PajamaOrderFormProps) {
           prixUnitaire: item.price,
           prixTotal: item.price * item.quantity,
         })),
+        clientRequestId,
       }
 
       const response = await fetch('/api/orders', {

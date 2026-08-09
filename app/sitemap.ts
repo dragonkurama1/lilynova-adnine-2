@@ -1,10 +1,11 @@
 import { MetadataRoute } from 'next'
-import { products } from '@/lib/products'
+import { supabaseAdmin } from '@/lib/supabase/server'
 
 const BASE_URL = 'https://lilynova.com'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
+  const { data: products } = await supabaseAdmin.from('products').select('id')
 
   // Pages statiques
   const staticPages: MetadataRoute.Sitemap = [
@@ -21,7 +22,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ]
 
   // Pages produits individuelles
-  const productPages: MetadataRoute.Sitemap = products.map(product => ({
+  const productPages: MetadataRoute.Sitemap = (products || []).map(product => ({
     url: `${BASE_URL}/product/${product.id}`,
     lastModified: now,
     changeFrequency: 'weekly' as const,

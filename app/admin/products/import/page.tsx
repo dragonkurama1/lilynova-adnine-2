@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
+import { useAdminAuth } from '@/hooks/use-admin-auth'
 
 const ALL_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '2XL', '75', '80', '85', '90', '95', '100']
 const REQUIRED  = ['ID', 'Produit', 'Collection', 'Couleur']
 const HEADERS   = ['ID', 'Produit', 'Collection', 'Couleur', 'Image', 'Prix', 'PrixPromo', ...ALL_SIZES]
-const LS_KEY    = 'admin_pw'
 
 type CsvRow = Record<string, string>
 type RowStatus = 'pending' | 'ok' | 'error'
@@ -61,23 +61,14 @@ function downloadTemplate() {
 export default function ImportCatalogPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [isAuth, setIsAuth]   = useState(false)
+  const { isAuth, password, checking, login } = useAdminAuth()
   const [pwInput, setPwInput] = useState('')
   const [pwError, setPwError] = useState('')
 
-  useEffect(() => {
-    if (localStorage.getItem(LS_KEY)) setIsAuth(true)
-  }, [])
-
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const saved = localStorage.getItem(LS_KEY)
-    if (pwInput === saved || pwInput === 'admin2024') {
-      localStorage.setItem(LS_KEY, pwInput)
-      setIsAuth(true)
-    } else {
-      setPwError('Mot de passe incorrect')
-    }
+    const ok = await login(pwInput)
+    if (!ok) setPwError('Mot de passe incorrect')
   }
 
   const [rows, setRows]           = useState<CsvRow[]>([])
@@ -147,7 +138,7 @@ export default function ImportCatalogPage() {
   }
 
   const handleImport = async () => {
-    const pw = localStorage.getItem(LS_KEY) || ''
+    const pw = password
     setIsImporting(true)
     setSummary(null)
     const validIndexes = rows.map((_, i) => i).filter(i => !rowErrors[i])
@@ -204,6 +195,7 @@ export default function ImportCatalogPage() {
   const validCount   = rows.filter((_, i) => !rowErrors[i]).length
   const invalidCount = rows.length - validCount
 
+  if (checking) return null
   if (!isAuth) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb' }}>
       <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '40px', width: '360px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>

@@ -4,7 +4,7 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
-import { products as staticProducts, type Product } from '@/lib/products'
+import { type Product } from '@/lib/products'
 import { getLiveProducts, getLiveCatalogues, findCatalogue, catalogueBorderStyle, type Catalogue } from '@/lib/get-live-products'
 
 const catalogueCollections = [
@@ -61,7 +61,7 @@ const DYNAMIC_STYLES = [
 ]
 
 export default function CataloguePage() {
-  const [products, setProducts] = useState<Product[]>(staticProducts)
+  const [products, setProducts] = useState<Product[]>([])
   const [catalogues, setCatalogues] = useState<Catalogue[]>([])
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function CataloguePage() {
 
   // Collections ajoutées depuis l'admin qui ne correspondent à aucune des 4
   // cartes prédéfinies ci-dessus : on les affiche quand même, dynamiquement,
-  // pour que tout nouveau catalogue créé dans Google Sheets reste visible.
+  // pour que tout nouveau catalogue créé depuis l'admin reste visible.
   const dynamicCollections = Array.from(
     new Map(
       products

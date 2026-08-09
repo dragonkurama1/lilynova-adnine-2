@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { COLOR_PALETTE, getColorDot } from '@/lib/color-utils'
+import { useAdminAuth } from '@/hooks/use-admin-auth'
 
 const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '2XL']
 const LINGERIE_SIZES = ['75', '80', '85', '90', '95', '100']
@@ -52,6 +53,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const router        = useRouter()
   const searchParams  = useSearchParams()
   const couleurParam  = searchParams.get('couleur') || ''
+  const { isAuth, password, checking, login } = useAdminAuth()
+  const [pwInput, setPwInput] = useState('')
+  const [pwError, setPwError] = useState('')
 
   const [collections, setCollections] = useState<string[]>([])
   const [isNewCol,    setIsNewCol]    = useState(false)
@@ -141,7 +145,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     setError('')
     try {
       const { base64, mimeType } = await fileToCompressedBase64(file)
-      const pw = localStorage.getItem('admin_pw') || ''
+      const pw = password
       const res = await fetch('/api/upload-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-token': pw },
@@ -182,7 +186,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       }
     }
 
-    const pw = localStorage.getItem('admin_pw') || ''
+    const pw = password
     setIsSubmitting(true)
 
     try {
@@ -229,6 +233,34 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     display: 'block', marginBottom: '6px', fontSize: '12px',
     fontWeight: '600', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em',
   }
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const ok = await login(pwInput)
+    if (!ok) setPwError('Mot de passe incorrect')
+  }
+
+  if (checking) return null
+  if (!isAuth) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb' }}>
+      <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '40px', width: '360px', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+        <h1 style={{ margin: '0 0 24px', fontSize: '20px', fontWeight: '700', textAlign: 'center' }}>🔒 Admin Produits</h1>
+        <form onSubmit={handleLogin}>
+          <input
+            type="password"
+            placeholder="Mot de passe admin"
+            value={pwInput}
+            onChange={e => { setPwInput(e.target.value); setPwError('') }}
+            style={{ width: '100%', padding: '12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+          />
+          {pwError && <p style={{ color: '#ef4444', fontSize: '13px', margin: '8px 0 0' }}>{pwError}</p>}
+          <button type="submit" style={{ marginTop: '16px', width: '100%', padding: '12px', backgroundColor: '#1a1a1a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+            Connexion
+          </button>
+        </form>
+      </div>
+    </div>
+  )
 
   if (isLoading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>

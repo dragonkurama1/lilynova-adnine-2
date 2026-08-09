@@ -23,6 +23,7 @@ export function SingleProductOrderForm({
   quantity,
   unitPrice,
 }: SingleProductOrderFormProps) {
+  const [clientRequestId] = useState(() => crypto.randomUUID())
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [city, setCity] = useState('')
@@ -73,7 +74,8 @@ export function SingleProductOrderForm({
             prixUnitaire: unitPrice,
             prixTotal: subtotal,
           }
-        ]
+        ],
+        clientRequestId,
       }
 
       const response = await fetch('/api/orders', {
