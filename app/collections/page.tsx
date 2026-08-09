@@ -78,6 +78,7 @@ export default function CataloguePage() {
   // Collections ajoutées depuis l'admin qui ne correspondent à aucune des 4
   // cartes prédéfinies ci-dessus : on les affiche quand même, dynamiquement,
   // pour que tout nouveau catalogue créé depuis l'admin reste visible.
+  const dynamicIds = new Set<string>()
   const dynamicCollections = Array.from(
     new Map(
       products
@@ -87,6 +88,7 @@ export default function CataloguePage() {
   ).map(([id, sample], i) => {
     const style = DYNAMIC_STYLES[i % DYNAMIC_STYLES.length]
     counts[id] = products.filter((p) => p.collection === id).length
+    dynamicIds.add(id)
     return {
       id,
       name: sample.collectionLabel || sample.collection,
@@ -96,7 +98,24 @@ export default function CataloguePage() {
     }
   })
 
-  const allCollections = [...catalogueCollections, ...dynamicCollections]
+  // Catalogues créés depuis /admin/collections mais qui n'ont encore aucun
+  // produit rattaché : sans ça, un catalogue tout juste créé restait invisible
+  // sur /collections jusqu'à ce qu'un produit lui soit assigné.
+  const emptyCatalogueCollections = catalogues
+    .filter((c) => !KNOWN_COLLECTION_IDS.has(c.ID) && !dynamicIds.has(c.ID))
+    .map((c, i) => {
+      const style = DYNAMIC_STYLES[(dynamicCollections.length + i) % DYNAMIC_STYLES.length]
+      counts[c.ID] = 0
+      return {
+        id: c.ID,
+        name: c.Nom,
+        description: c.Description || `Découvrez la collection ${c.Nom}.`,
+        image: c.Image || '/images/product-1.jpg',
+        ...style,
+      }
+    })
+
+  const allCollections = [...catalogueCollections, ...dynamicCollections, ...emptyCatalogueCollections]
 
   return (
     <>
