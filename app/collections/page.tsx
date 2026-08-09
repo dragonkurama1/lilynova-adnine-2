@@ -150,6 +150,7 @@ export default function CataloguePage() {
                     {/* Image */}
                     <div className="relative h-64 shrink-0 overflow-hidden">
                       <img
+                        key={image}
                         src={image}
                         alt={col.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

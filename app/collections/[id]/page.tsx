@@ -478,6 +478,7 @@ function ProductCard({ product, colorStocks }: { product: Product; colorStocks: 
       >
         <Link href={`/product/${product.id}`} className="relative aspect-square overflow-hidden bg-gradient-to-br from-muted to-muted/60 block cursor-pointer">
           <img
+            key={getProductImage(product, hoveredColor ?? displayColor)}
             src={getProductImage(product, hoveredColor ?? displayColor)}
             alt={product.name}
             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
@@ -813,6 +814,7 @@ export default function CollectionPage() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="flex items-center gap-6">
               {catalogue?.Image?.trim() ? (
                 <img
+                  key={catalogue.Image}
                   src={catalogue.Image}
                   alt={collection.name}
                   className="w-20 h-20 rounded-xl object-cover flex-shrink-0"
