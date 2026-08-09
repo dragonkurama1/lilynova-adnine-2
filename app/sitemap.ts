@@ -3,6 +3,10 @@ import { supabaseAdmin } from '@/lib/supabase/server'
 
 const BASE_URL = 'https://lilynova.com'
 
+// Généré à la requête (pas au build) : la liste de produits vit dans
+// Supabase et change indépendamment des déploiements.
+export const dynamic = 'force-dynamic'
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
   const { data: products } = await supabaseAdmin.from('products').select('id')
