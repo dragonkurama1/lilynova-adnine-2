@@ -7,6 +7,17 @@ import { Footer } from '@/components/footer'
 import { type Product } from '@/lib/products'
 import { getLiveProducts, getLiveCatalogues, findCatalogue, catalogueBorderStyle, type Catalogue } from '@/lib/get-live-products'
 
+// Style visuel unique appliqué à TOUTES les cartes catalogue (fond, bordure
+// de repli, couleur du badge) — repris de la 1ère collection (Pyjama) pour
+// que chaque carte, y compris celles créées dynamiquement depuis l'admin,
+// ait un rendu identique. Seule la bordure réelle (forme/couleur) reste
+// personnalisable par catalogue via le champ "Bordure" de /admin/collections.
+const UNIFORM_STYLE = {
+  color: 'from-rose-50 to-pink-100',
+  borderColor: 'border-pink-200',
+  badgeColor: 'bg-pink-100 text-pink-800',
+}
+
 const catalogueCollections = [
   {
     id: 'pyjama',
@@ -14,9 +25,7 @@ const catalogueCollections = [
     description: 'Pyjamas confortables et élégants pour des nuits douces et reposantes.',
     icon: '🌙',
     image: '/images/product-1.jpg',
-    color: 'from-rose-50 to-pink-100',
-    borderColor: 'border-pink-200',
-    badgeColor: 'bg-pink-100 text-pink-800',
+    ...UNIFORM_STYLE,
   },
   {
     id: 'pyjama-atach',
@@ -24,9 +33,7 @@ const catalogueCollections = [
     description: 'Collection Pyjama Prestige — ensembles exclusifs velours, satin et fleuri pour des nuits raffinées.',
     icon: '✨',
     image: '/images/product-a1.jpg',
-    color: 'from-amber-50 to-orange-100',
-    borderColor: 'border-orange-200',
-    badgeColor: 'bg-orange-100 text-orange-800',
+    ...UNIFORM_STYLE,
   },
   {
     id: 'lingerie',
@@ -34,9 +41,7 @@ const catalogueCollections = [
     description: 'Lingerie fine et raffinée, pour vous sentir belle et confiante chaque jour.',
     icon: '🌸',
     image: '/images/product-l1.jpg',
-    color: 'from-purple-50 to-fuchsia-100',
-    borderColor: 'border-fuchsia-200',
-    badgeColor: 'bg-fuchsia-100 text-fuchsia-800',
+    ...UNIFORM_STYLE,
   },
   {
     id: 'miss-rose',
@@ -44,21 +49,15 @@ const catalogueCollections = [
     description: 'Collection Pyjama Été — ensembles légers, satin et velours pour des nuits douces et fraîches.',
     icon: '☀️',
     image: '/images/product-mr1.jpg',
-    color: 'from-red-50 to-rose-100',
-    borderColor: 'border-rose-300',
-    badgeColor: 'bg-rose-100 text-rose-800',
+    ...UNIFORM_STYLE,
   },
 ]
 
 const KNOWN_COLLECTION_IDS = new Set(catalogueCollections.map((c) => c.id))
 
-// Styles "génériques" appliqués aux collections dynamiques (ajoutées via
-// l'admin) qui n'ont pas de carte prédéfinie ci-dessus, en alternance.
-const DYNAMIC_STYLES = [
-  { icon: '🛍️', color: 'from-slate-50 to-zinc-100', borderColor: 'border-zinc-200', badgeColor: 'bg-zinc-100 text-zinc-800' },
-  { icon: '💎', color: 'from-sky-50 to-cyan-100', borderColor: 'border-cyan-200', badgeColor: 'bg-cyan-100 text-cyan-800' },
-  { icon: '🌷', color: 'from-emerald-50 to-teal-100', borderColor: 'border-teal-200', badgeColor: 'bg-teal-100 text-teal-800' },
-]
+// Icônes utilisées en rotation pour les collections dynamiques (ajoutées
+// depuis l'admin) — le fond/bordure/badge reste UNIFORM_STYLE pour toutes.
+const DYNAMIC_ICONS = ['🛍️', '💎', '🌷']
 
 export default function CataloguePage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -86,7 +85,6 @@ export default function CataloguePage() {
         .map((p) => [p.collection, p])
     ).entries()
   ).map(([id, sample], i) => {
-    const style = DYNAMIC_STYLES[i % DYNAMIC_STYLES.length]
     counts[id] = products.filter((p) => p.collection === id).length
     dynamicIds.add(id)
     return {
@@ -94,7 +92,8 @@ export default function CataloguePage() {
       name: sample.collectionLabel || sample.collection,
       description: `Découvrez la collection ${sample.collectionLabel || sample.collection}.`,
       image: sample.image || '/images/product-1.jpg',
-      ...style,
+      icon: DYNAMIC_ICONS[i % DYNAMIC_ICONS.length],
+      ...UNIFORM_STYLE,
     }
   })
 
@@ -104,14 +103,14 @@ export default function CataloguePage() {
   const emptyCatalogueCollections = catalogues
     .filter((c) => !KNOWN_COLLECTION_IDS.has(c.ID) && !dynamicIds.has(c.ID))
     .map((c, i) => {
-      const style = DYNAMIC_STYLES[(dynamicCollections.length + i) % DYNAMIC_STYLES.length]
       counts[c.ID] = 0
       return {
         id: c.ID,
         name: c.Nom,
         description: c.Description || `Découvrez la collection ${c.Nom}.`,
         image: c.Image || '/images/product-1.jpg',
-        ...style,
+        icon: DYNAMIC_ICONS[(dynamicCollections.length + i) % DYNAMIC_ICONS.length],
+        ...UNIFORM_STYLE,
       }
     })
 
@@ -143,13 +142,13 @@ export default function CataloguePage() {
               const description = cat?.Description?.trim() ? cat.Description : col.description
               const borderStyle = catalogueBorderStyle(cat)
               return (
-                <Link key={col.id} href={`/collections/${col.id}`}>
+                <Link key={col.id} href={`/collections/${col.id}`} className="h-full">
                   <div
-                    className={`group relative overflow-hidden ${borderStyle ? '' : `rounded-2xl border-2 ${col.borderColor}`} bg-gradient-to-br ${col.color} shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer hover:-translate-y-1`}
+                    className={`group relative overflow-hidden flex flex-col h-full ${borderStyle ? '' : `rounded-2xl border-2 ${col.borderColor}`} bg-gradient-to-br ${col.color} shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer hover:-translate-y-1`}
                     style={borderStyle as CSSProperties | undefined}
                   >
                     {/* Image */}
-                    <div className="relative h-64 overflow-hidden">
+                    <div className="relative h-64 shrink-0 overflow-hidden">
                       <img
                         src={image}
                         alt={col.name}
@@ -170,14 +169,14 @@ export default function CataloguePage() {
                     </div>
 
                     {/* Content */}
-                    <div className="p-6">
+                    <div className="p-6 flex flex-col flex-1">
                       <h2 className="text-2xl font-serif font-bold text-gray-900 mb-2 group-hover:text-primary transition-colors">
                         {col.name}
                       </h2>
-                      <p className="text-sm text-gray-600 leading-relaxed mb-4">
+                      <p className="text-sm text-gray-600 leading-relaxed mb-4 line-clamp-2 min-h-[2.75rem]">
                         {description}
                       </p>
-                      <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary group-hover:gap-3 transition-all duration-200">
+                      <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary group-hover:gap-3 transition-all duration-200 mt-auto">
                         Voir la collection
                         <span className="text-lg">→</span>
                       </span>
