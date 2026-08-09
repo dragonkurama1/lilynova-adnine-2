@@ -62,9 +62,27 @@ export async function PUT(
     const price = body.Prix === '' || body.Prix == null ? null : Number(body.Prix)
     const salePrice = body.PrixPromo === '' || body.PrixPromo == null ? null : Number(body.PrixPromo)
 
+    if (body.Badge !== undefined && !['', 'bestseller', 'new', 'sale'].includes(body.Badge)) {
+      return NextResponse.json({ error: 'Badge invalide. Valeurs possibles : bestseller, new, sale, ou vide.' }, { status: 400 })
+    }
+
+    const productUpdate: Record<string, unknown> = {
+      name, collection_slug: collectionSlug, collection_label: collectionLabel, updated_at: new Date().toISOString(),
+    }
+    if (body.Description !== undefined) productUpdate.description = String(body.Description)
+    if (body.Features !== undefined) {
+      productUpdate.features = String(body.Features).split('|').map((f: string) => f.trim()).filter(Boolean)
+    }
+    if (body.Badge !== undefined) productUpdate.badge = body.Badge === '' ? null : body.Badge
+    if (body.Rating !== undefined && body.Rating !== '') productUpdate.rating = Number(body.Rating)
+    if (body.Reviews !== undefined && body.Reviews !== '') productUpdate.reviews = Number(body.Reviews)
+    if (body.InStock !== undefined) productUpdate.in_stock = body.InStock === true || body.InStock === 'true'
+    if (body.DetailImage1 !== undefined) productUpdate.detail_image_1 = body.DetailImage1 || null
+    if (body.DetailImage2 !== undefined) productUpdate.detail_image_2 = body.DetailImage2 || null
+
     const { error: productError } = await supabaseAdmin
       .from('products')
-      .update({ name, collection_slug: collectionSlug, collection_label: collectionLabel, updated_at: new Date().toISOString() })
+      .update(productUpdate)
       .eq('id', id)
     if (productError) throw new Error(productError.message)
 

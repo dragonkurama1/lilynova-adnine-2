@@ -16,6 +16,7 @@ const NAV_CARDS = [
   { href: '/admin/products', icon: '📦', title: 'Produits',   desc: 'Ajouter, modifier, supprimer le catalogue' },
   { href: '/admin/stock',    icon: '📊', title: 'Stock',      desc: 'Quantités par produit, couleur et taille' },
   { href: '/admin/collections', icon: '🗂️', title: 'Catalogues', desc: 'Image, description et style des collections' },
+  { href: '/admin/content',  icon: '📝', title: 'Contenu',    desc: 'Avis clients et Questions Fréquentes' },
 ]
 
 export default function AdminDashboardPage() {

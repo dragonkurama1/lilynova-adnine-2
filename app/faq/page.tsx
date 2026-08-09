@@ -3,36 +3,15 @@
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-const faqs = [
-  {
-    question: 'Quel est le délai de livraison?',
-    answer: 'Nous livrons généralement en 3-5 jours ouvrables en France métropolitaine. Des délais spéciaux peuvent s\'appliquer pour les régions ou pays spécifiques.'
-  },
-  {
-    question: 'Comment puis-je retourner un produit?',
-    answer: 'Nous offrons une garantie de satisfaction de 30 jours. Si vous n\'êtes pas satisfait, contactez-nous pour retourner le produit sans frais supplémentaires.'
-  },
-  {
-    question: 'Vos pyjamas sont-ils lavables à la machine?',
-    answer: 'Oui, la plupart de nos pyjamas sont lavables à la machine. Consultez les instructions de lavage sur l\'étiquette de chaque produit pour les meilleurs résultats.'
-  },
-  {
-    question: 'Proposez-vous des tailles plus grandes?',
-    answer: 'Oui, nous proposons une gamme complète de tailles de XS à XXL. Consultez notre guide des tailles pour trouver la taille parfaite.'
-  },
-  {
-    question: 'Puis-je commander par WhatsApp?',
-    answer: 'Absolument! Vous pouvez nous contacter sur WhatsApp pour des commandes personnalisées ou pour obtenir des conseils de style. Cliquez sur le lien WhatsApp dans notre footer.'
-  },
-  {
-    question: 'Avez-vous une politique de confidentialité?',
-    answer: 'Oui, veuillez consulter notre page Politiques pour plus d\'informations sur la façon dont nous traitons et protégeons vos données personnelles.'
-  }
-]
+type Faq = {
+  id: string
+  question: string
+  answer: string
+}
 
-function FAQItem({ faq, index }: { faq: typeof faqs[0], index: number }) {
+function FAQItem({ faq, index }: { faq: Faq, index: number }) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
@@ -54,6 +33,15 @@ function FAQItem({ faq, index }: { faq: typeof faqs[0], index: number }) {
 }
 
 export default function FAQPage() {
+  const [faqs, setFaqs] = useState<Faq[]>([])
+
+  useEffect(() => {
+    fetch('/api/faqs')
+      .then(res => res.json())
+      .then(data => setFaqs(data.faqs || []))
+      .catch(() => {})
+  }, [])
+
   return (
     <>
       <Header />
@@ -77,13 +65,13 @@ export default function FAQPage() {
           <div className="max-w-3xl mx-auto">
             <div className="space-y-4">
               {faqs.map((faq, index) => (
-                <FAQItem key={index} faq={faq} index={index} />
+                <FAQItem key={faq.id} faq={faq} index={index} />
               ))}
             </div>
 
             <div className="mt-16 text-center animate-in fade-in duration-1000">
               <p className="text-lg text-muted-foreground mb-4">
-                Vous n\'avez pas trouvé la réponse que vous cherchez?
+                Vous n&apos;avez pas trouvé la réponse que vous cherchez?
               </p>
               <a href="https://wa.me/212660435756" target="_blank" rel="noopener noreferrer" className="text-primary hover:opacity-80 transition-opacity font-semibold">
                 Contactez-nous sur WhatsApp →

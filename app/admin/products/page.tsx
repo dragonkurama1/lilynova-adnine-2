@@ -186,6 +186,9 @@ export default function AdminProductsPage() {
             <Link href="/admin/collections" style={{ padding: '8px 18px', backgroundColor: '#fff', border: '1.5px solid #1a1a1a', color: '#1a1a1a', borderRadius: '8px', fontSize: '13px', fontWeight: '600', textDecoration: 'none' }}>
               🗂️ Catalogues
             </Link>
+            <Link href="/admin/content" style={{ padding: '8px 18px', backgroundColor: '#fff', border: '1.5px solid #1a1a1a', color: '#1a1a1a', borderRadius: '8px', fontSize: '13px', fontWeight: '600', textDecoration: 'none' }}>
+              📝 Contenu
+            </Link>
             <Link href="/admin/products/add" style={{ padding: '8px 18px', backgroundColor: '#1a1a1a', color: '#fff', borderRadius: '8px', fontSize: '13px', fontWeight: '600', textDecoration: 'none' }}>
               + Ajouter produit
             </Link>
@@ -246,7 +249,7 @@ export default function AdminProductsPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-                    {['Image', 'ID', 'Produit', 'Collection', 'Couleur', 'Prix', ...ALL_SIZES, 'Mise à jour', 'Actions'].map(h => (
+                    {['Image', 'ID', 'Produit', 'Badge', 'Collection', 'Couleur', 'Prix', ...ALL_SIZES, 'Mise à jour', 'Actions'].map(h => (
                       <th key={h} style={{ padding: '11px 12px', textAlign: h === 'Actions' ? 'center' : 'left', fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
                         {h}
                       </th>
@@ -281,6 +284,20 @@ export default function AdminProductsPage() {
                         </td>
                         <td style={{ padding: '10px 12px', fontSize: '12px', fontWeight: '600', color: '#374151', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{p.ID}</td>
                         <td style={{ padding: '10px 12px', fontSize: '13px', color: '#1f2937', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{String(p.Produit)}</td>
+                        <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                          {(() => {
+                            const badge = String(p['Badge'] || '')
+                            if (!badge) return <span style={{ color: '#d1d5db', fontSize: '12px' }}>—</span>
+                            const map: Record<string, { label: string; bg: string; color: string }> = {
+                              bestseller: { label: '⭐ Bestseller', bg: '#fef3c7', color: '#92400e' },
+                              new: { label: '🆕 Nouveau', bg: '#d1fae5', color: '#065f46' },
+                              sale: { label: '🔥 Solde', bg: '#fee2e2', color: '#991b1b' },
+                            }
+                            const info = map[badge]
+                            if (!info) return <span style={{ color: '#d1d5db', fontSize: '12px' }}>—</span>
+                            return <span style={{ padding: '2px 8px', backgroundColor: info.bg, color: info.color, borderRadius: '20px', fontSize: '11px', fontWeight: '600' }}>{info.label}</span>
+                          })()}
+                        </td>
                         <td style={{ padding: '10px 12px' }}>
                           <span style={{ display: 'inline-block', padding: '2px 8px', backgroundColor: '#eff6ff', color: '#1d4ed8', borderRadius: '20px', fontSize: '11px', fontWeight: '600' }}>
                             {String(p.Collection)}

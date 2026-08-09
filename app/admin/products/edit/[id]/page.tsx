@@ -72,6 +72,16 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [prixPromo, setPrixPromo] = useState('')
   const [variantId, setVariantId] = useState('')
 
+  // Détails marketing (partagés par toutes les couleurs de ce produit)
+  const [description, setDescription] = useState('')
+  const [featuresText, setFeaturesText] = useState('')
+  const [badge, setBadge] = useState('')
+  const [rating, setRating] = useState('')
+  const [reviews, setReviews] = useState('')
+  const [detailImage1, setDetailImage1] = useState('')
+  const [detailImage2, setDetailImage2] = useState('')
+  const [uploadingDetail, setUploadingDetail] = useState<Record<1 | 2, boolean>>({ 1: false, 2: false })
+
   const [isLoading,    setIsLoading]    = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error,        setError]        = useState('')
@@ -124,6 +134,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         setPrix(matchPrix === '' || matchPrix == null ? '' : String(matchPrix))
         setPrixPromo(matchPrixPromo === '' || matchPrixPromo == null ? '' : String(matchPrixPromo))
         setVariantId(String(match['VariantId'] || ''))
+
+        setDescription(String(match['Description'] || ''))
+        setFeaturesText(String(match['Features'] || '').split('|').map(f => f.trim()).filter(Boolean).join(', '))
+        setBadge(String(match['Badge'] || ''))
+        setRating(match['Rating'] != null && match['Rating'] !== '' ? String(match['Rating']) : '')
+        setReviews(match['Reviews'] != null && match['Reviews'] !== '' ? String(match['Reviews']) : '')
+        setDetailImage1(String(match['DetailImage1'] || ''))
+        setDetailImage2(String(match['DetailImage2'] || ''))
       } catch (err) {
         setError('Impossible de charger le produit.')
       } finally {
@@ -161,6 +179,26 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     }
   }
 
+  const handleDetailImageUpload = async (slot: 1 | 2, file: File) => {
+    setUploadingDetail(prev => ({ ...prev, [slot]: true }))
+    setError('')
+    try {
+      const { base64, mimeType } = await fileToCompressedBase64(file)
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': password },
+        body: JSON.stringify({ filename: file.name, mimeType, base64 }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Échec de l'envoi")
+      if (slot === 1) setDetailImage1(data.url); else setDetailImage2(data.url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Échec de l'envoi de l'image")
+    } finally {
+      setUploadingDetail(prev => ({ ...prev, [slot]: false }))
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -186,6 +224,15 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       }
     }
 
+    if (rating !== '' && (isNaN(Number(rating)) || Number(rating) < 0 || Number(rating) > 5)) {
+      setError('La note doit être entre 0 et 5.')
+      return
+    }
+    if (reviews !== '' && (isNaN(Number(reviews)) || Number(reviews) < 0)) {
+      setError("Le nombre d'avis doit être un nombre positif.")
+      return
+    }
+
     const pw = password
     setIsSubmitting(true)
 
@@ -206,6 +253,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       ALL_SIZES.forEach(size => {
         payload[size] = stocks[size] === '' ? '' : Number(stocks[size])
       })
+
+      payload.Description = description.trim()
+      payload.Features = featuresText.split(',').map(f => f.trim()).filter(Boolean).join('|')
+      payload.Badge = badge
+      payload.Rating = rating === '' ? '' : Number(rating)
+      payload.Reviews = reviews === '' ? '' : Number(reviews)
+      payload.DetailImage1 = detailImage1.trim()
+      payload.DetailImage2 = detailImage2.trim()
 
       const res  = await fetch(`/api/products/${id}`, {
         method: 'PUT',
@@ -493,6 +548,94 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     />
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Détails marketing */}
+          <div style={{ backgroundColor: '#fff', borderRadius: '12px', padding: '28px', border: '1px solid #e5e7eb', marginBottom: '20px' }}>
+            <h2 style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: '700', color: '#1a1a1a' }}>📝 Détails marketing du produit</h2>
+            <p style={{ margin: '0 0 20px', fontSize: '12px', color: '#6b7280' }}>Partagés par toutes les couleurs de ce produit — description, mise en avant (bestseller), avis...</p>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={labelStyle}>Description</label>
+              <textarea
+                style={{ ...inputStyle, minHeight: '80px', resize: 'vertical', fontFamily: 'inherit' }}
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="Description affichée sur la fiche produit"
+              />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={labelStyle}>Caractéristiques (séparées par des virgules)</label>
+              <input
+                style={inputStyle}
+                value={featuresText}
+                onChange={e => setFeaturesText(e.target.value)}
+                placeholder="Ex: Tissu doux, Séchage rapide, Léger"
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+              <div>
+                <label style={labelStyle}>Badge</label>
+                <select style={inputStyle} value={badge} onChange={e => setBadge(e.target.value)}>
+                  <option value="">Aucun</option>
+                  <option value="bestseller">⭐ Bestseller</option>
+                  <option value="new">🆕 Nouveau</option>
+                  <option value="sale">🔥 Solde</option>
+                </select>
+                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#9ca3af' }}>&quot;Bestseller&quot; affiche ce produit dans &quot;Nos Pyjamas les plus vendus&quot; sur l&apos;accueil.</p>
+              </div>
+              <div>
+                <label style={labelStyle}>Note (0-5)</label>
+                <input type="number" min="0" max="5" step="0.1" style={inputStyle} value={rating} onChange={e => setRating(e.target.value)} placeholder="Ex: 4.7" />
+              </div>
+              <div>
+                <label style={labelStyle}>Nombre d&apos;avis</label>
+                <input type="number" min="0" style={inputStyle} value={reviews} onChange={e => setReviews(e.target.value)} placeholder="Ex: 89" />
+              </div>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Photos détail (fiche produit)</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {([1, 2] as const).map(slot => {
+                  const value = slot === 1 ? detailImage1 : detailImage2
+                  const setValue = slot === 1 ? setDetailImage1 : setDetailImage2
+                  const isUploading = uploadingDetail[slot]
+                  return (
+                    <div key={slot} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                      <div style={{
+                        width: '56px', height: '56px', borderRadius: '8px', border: '1.5px dashed #e5e7eb',
+                        backgroundColor: '#f9fafb', flexShrink: 0, overflow: 'hidden',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#9ca3af',
+                      }}>
+                        {isUploading ? '⏳' : value.trim() ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={value.trim()} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                        ) : `#${slot}`}
+                      </div>
+                      <input
+                        style={{ ...inputStyle, flex: 1 }}
+                        value={value}
+                        onChange={e => setValue(e.target.value)}
+                        placeholder={`URL photo détail ${slot}`}
+                      />
+                      <label style={{
+                        padding: '10px 12px', backgroundColor: '#f3f4f6', border: '1.5px solid #e5e7eb',
+                        borderRadius: '8px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', color: '#374151',
+                      }}>
+                        📤
+                        <input
+                          type="file" accept="image/*" style={{ display: 'none' }}
+                          onChange={e => { const f = e.target.files?.[0]; if (f) handleDetailImageUpload(slot, f); e.target.value = '' }}
+                        />
+                      </label>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
